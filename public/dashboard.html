@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Dashboard — RouteIQ</title>
+  <link rel="stylesheet" href="css/common.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+</head>
+<body>
+
+<!-- OFFLINE BANNER -->
+<div class="offline-banner" id="offline-banner">You are offline. Some features may be unavailable.</div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo"><span>Route</span><span class="iq">IQ</span></div>
+  <div class="topbar-date" id="topbar-date"></div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+  <!-- TODAY TAB -->
+  <div class="tab-content active" id="tab-today">
+    <h1 class="page-title">Today's Route</h1>
+    <p class="page-sub" id="today-sub">Loading...</p>
+    <div id="today-stops">
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+    </div>
+    <button class="btn btn-green btn-full" id="start-route-btn" style="display:none; margin-top:0.75rem;">
+      Open in Google Maps
+    </button>
+  </div>
+
+  <!-- ACCOUNTS TAB -->
+  <div class="tab-content" id="tab-accounts">
+    <h1 class="page-title">Accounts</h1>
+    <input type="text" class="search-bar" id="account-search" placeholder="Search accounts..." />
+
+    <div id="accounts-list-view">
+      <div class="card" id="accounts-list" style="padding:0; overflow:hidden;"></div>
+    </div>
+
+    <div class="detail-view" id="account-detail">
+      <button class="detail-back" id="detail-back">&larr; All Accounts</button>
+      <div class="detail-header">
+        <h2 id="detail-name"></h2>
+        <div class="detail-meta" id="detail-meta"></div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:0.85rem; font-weight:700; margin-bottom:0.5rem;">Call Log History</h3>
+        <div id="detail-logs"></div>
+      </div>
+    </div>
+
+    <div class="add-form card" id="add-form">
+      <h3 style="font-size:0.95rem; font-weight:700; margin-bottom:0.75rem;">Add Account</h3>
+      <form id="add-account-form">
+        <div class="form-group">
+          <label>Account Name *</label>
+          <input type="text" id="add-name" required maxlength="255" />
+        </div>
+        <div class="form-group">
+          <label>Address</label>
+          <input type="text" id="add-address" maxlength="500" />
+        </div>
+        <div class="form-group">
+          <label>Contact Name</label>
+          <input type="text" id="add-contact" maxlength="255" />
+        </div>
+        <div class="form-group">
+          <label>Contact Email</label>
+          <input type="email" id="add-email" maxlength="255" />
+        </div>
+        <div class="form-group">
+          <label>Priority</label>
+          <select id="add-priority">
+            <option value="1">High</option>
+            <option value="2" selected>Medium</option>
+            <option value="3">Low</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea id="add-notes" maxlength="2000"></textarea>
+        </div>
+        <div style="display:flex; gap:0.5rem;">
+          <button type="button" class="btn btn-outline" style="flex:1;" onclick="toggleAddForm()">Cancel</button>
+          <button type="submit" class="btn btn-accent" style="flex:1;">Save Account</button>
+        </div>
+      </form>
+
+      <div class="import-form" style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border);">
+        <h4 style="font-size:0.82rem; font-weight:600; color:var(--muted); margin-bottom:0.5rem;">Or import from CSV</h4>
+        <form id="import-form">
+          <input type="file" id="import-file" accept=".csv" />
+          <button type="submit" class="btn btn-outline btn-full">Import CSV</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLAN TAB -->
+  <div class="tab-content" id="tab-plan">
+    <h1 class="page-title">Plan Route</h1>
+    <p class="page-sub">Select accounts and optimize your route.</p>
+    <input type="date" class="plan-date-picker" id="plan-date" />
+    <div class="card" id="plan-checklist" style="padding:0.5rem 1rem;"></div>
+    <div class="plan-actions">
+      <button class="btn btn-accent" id="plan-optimize-btn">Optimize</button>
+      <button class="btn btn-outline" id="plan-briefs-btn">Briefs</button>
+      <button class="btn btn-green" id="plan-save-btn">Save Plan</button>
+    </div>
+  </div>
+
+  <!-- PROFILE TAB -->
+  <div class="tab-content" id="tab-profile">
+    <div class="card profile-card">
+      <div class="profile-avatar" id="profile-avatar"></div>
+      <div class="profile-email" id="profile-email"></div>
+      <div class="profile-plan">Plan: <span id="profile-plan">free</span></div>
+      <div style="margin-top:1rem;">
+        <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.82rem; margin-bottom:0.3rem; cursor:pointer;">
+          <input type="radio" name="upgrade-plan" value="solo" checked /> Solo ($29/mo)
+        </label>
+        <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.82rem; margin-bottom:0.3rem; cursor:pointer;">
+          <input type="radio" name="upgrade-plan" value="team" /> Team ($79/mo)
+        </label>
+        <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.82rem; cursor:pointer;">
+          <input type="radio" name="upgrade-plan" value="agency" /> Agency ($199/mo)
+        </label>
+      </div>
+      <div class="profile-actions">
+        <button class="btn btn-accent btn-full" id="upgrade-btn">Upgrade Plan</button>
+        <button class="btn btn-outline btn-full" id="logout-btn">Log Out</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FAB for Accounts tab -->
+<button class="fab" id="fab-add" onclick="toggleAddForm()">+</button>
+
+<!-- VOICE RECORDER MODAL -->
+<div class="modal-overlay" id="voice-modal">
+  <div class="modal">
+    <h3 id="voice-modal-title">Voice Log</h3>
+    <p id="voice-modal-sub">Tap to start recording your call notes.</p>
+    <div class="rec-indicator" id="rec-indicator" style="display:none;">
+      <div class="rec-dot"></div> Recording
+    </div>
+    <div class="rec-time" id="rec-time" style="display:none;">0:00</div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="voice-cancel">Cancel</button>
+      <button class="btn btn-accent" id="voice-action">Start Recording</button>
+    </div>
+    <div id="voice-result" style="margin-top:1rem; display:none; text-align:left;">
+      <div style="font-size:0.72rem; font-weight:600; color:var(--accent2); text-transform:uppercase; margin-bottom:0.2rem;">Transcript</div>
+      <div id="voice-transcript" style="font-size:0.82rem; margin-bottom:0.5rem;"></div>
+      <div style="font-size:0.72rem; font-weight:600; color:var(--green); text-transform:uppercase; margin-bottom:0.2rem;">Summary</div>
+      <div id="voice-summary" style="font-size:0.82rem;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- BOTTOM TAB BAR -->
+<div class="tab-bar">
+  <button class="tab active" data-tab="today">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Today
+  </button>
+  <button class="tab" data-tab="accounts">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Accounts
+  </button>
+  <button class="tab" data-tab="plan">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+    Plan
+  </button>
+  <button class="tab" data-tab="profile">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    Profile
+  </button>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/voice.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>
