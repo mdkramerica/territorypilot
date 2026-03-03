@@ -27,11 +27,13 @@ const axios = require('axios');
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Clients
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Clients (lazy init so server boots even with placeholder env vars)
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || 'placeholder' });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'placeholder');
+const supabase = (process.env.SUPABASE_URL || '').startsWith('http')
+  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
+  : null;
+const resend = new Resend(process.env.RESEND_API_KEY || 'placeholder');
 
 app.use(cors());
 app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
