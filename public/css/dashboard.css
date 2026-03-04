@@ -280,6 +280,13 @@ body { line-height: 1.5; }
 .plan-stop-info { flex: 1; min-width: 0; }
 .plan-stop-info .stop-name { font-weight: 700; font-size: 0.88rem; }
 .plan-stop-info .stop-meta { font-size: 0.72rem; color: var(--muted); margin-top: 0.15rem; }
+.plan-brief-item {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.plan-brief-item:last-of-type { border-bottom: none; }
+.plan-brief-item .stop-name { font-weight: 700; font-size: 0.88rem; margin-bottom: 0.3rem; }
+.plan-brief-item .brief-box { margin-top: 0; }
 
 /* ── PROFILE TAB ── */
 .profile-card { text-align: center; padding: 1.5rem 1rem; }

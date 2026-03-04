@@ -167,6 +167,41 @@ router.get(
   })
 );
 
+// POST /api/accounts/geocode — re-geocode accounts missing lat/lng
+router.post(
+  '/geocode',
+  auth,
+  asyncHandler(async (req, res) => {
+    const { data: ungeocodedAccounts, error } = await supabase
+      .from('accounts')
+      .select('id, address')
+      .eq('user_id', req.user.id)
+      .not('address', 'is', null)
+      .is('lat', null);
+
+    if (error) return res.status(500).json({ error: 'Failed to load accounts' });
+    if (!ungeocodedAccounts?.length) {
+      return res.json({ geocoded: 0, message: 'All accounts with addresses are already geocoded' });
+    }
+
+    let geocoded = 0;
+    for (const account of ungeocodedAccounts) {
+      if (!account.address) continue;
+      const coords = await geocodeAddress(account.address);
+      if (coords) {
+        await supabase
+          .from('accounts')
+          .update({ lat: coords.lat, lng: coords.lng, updated_at: new Date().toISOString() })
+          .eq('id', account.id)
+          .eq('user_id', req.user.id);
+        geocoded++;
+      }
+    }
+
+    res.json({ geocoded, total: ungeocodedAccounts.length });
+  })
+);
+
 // POST /api/accounts/import
 router.post(
   '/import',

@@ -475,11 +475,62 @@
     });
   });
 
-  function showPlanResult(data, skippedCount) {
+  function showPlanBackBtn(result, checklist, filters) {
+    document.getElementById('plan-back-btn').addEventListener('click', () => {
+      result.style.display = 'none';
+      checklist.style.display = '';
+      filters.style.display = '';
+    });
+  }
+
+  function showPlanResult(data, skippedCount, selectedCount) {
     const checklist = document.getElementById('plan-checklist');
     const result = document.getElementById('plan-result');
     const filters = document.querySelector('.plan-filters');
     const route = data.route || [];
+
+    // All selected accounts were skipped — no geocoded addresses
+    if (!route.length) {
+      result.innerHTML = `
+        <div class="plan-result-header">
+          <strong>No routable accounts</strong>
+          <button class="plan-filter-btn" id="plan-back-btn">Edit selection</button>
+        </div>
+        <div style="padding:0.75rem 0; font-size:0.85rem; color:var(--muted);">
+          None of the ${selectedCount} selected account${selectedCount === 1 ? '' : 's'} have geocoded addresses.
+          Route optimization needs lat/lng coordinates from valid addresses.
+        </div>
+        <button class="btn btn-accent" id="plan-geocode-btn" style="width:100%;">Fix: Geocode All Addresses</button>
+      `;
+      checklist.style.display = 'none';
+      filters.style.display = 'none';
+      result.style.display = 'block';
+      showPlanBackBtn(result, checklist, filters);
+
+      document.getElementById('plan-geocode-btn').addEventListener('click', async () => {
+        const geoBtn = document.getElementById('plan-geocode-btn');
+        geoBtn.disabled = true;
+        geoBtn.innerHTML = '<span class="spinner"></span> Geocoding...';
+        try {
+          const res = await apiFetch('/api/accounts/geocode', { method: 'POST' });
+          if (!res) return;
+          const geoData = await res.json();
+          toast(`Geocoded ${geoData.geocoded} of ${geoData.total} accounts`);
+          // Refresh accounts data
+          accountsLoaded = null;
+          await loadAccounts();
+          await loadPlanAccounts();
+          result.style.display = 'none';
+          checklist.style.display = '';
+          filters.style.display = '';
+        } catch {
+          toast('Geocoding failed — check your Google Maps API key');
+        }
+        geoBtn.disabled = false;
+        geoBtn.textContent = 'Fix: Geocode All Addresses';
+      });
+      return;
+    }
 
     let msg = `Route optimized: ${data.stops} stops, ${data.totalMiles} mi`;
     if (skippedCount > 0) msg += ` (${skippedCount} skipped — no address)`;
@@ -490,6 +541,7 @@
         <strong>Optimized Route — ${data.stops} stops, ${data.totalMiles} mi</strong>
         <button class="plan-filter-btn" id="plan-back-btn">Edit selection</button>
       </div>
+      ${skippedCount > 0 ? `<div style="padding:0.4rem 0; font-size:0.78rem; color:var(--warning, #f59e0b);">${skippedCount} account${skippedCount === 1 ? '' : 's'} skipped (no geocoded address)</div>` : ''}
       ${route.map((s, i) => `
         <div class="plan-stop">
           <div class="stop-num">${i + 1}</div>
@@ -505,12 +557,7 @@
     checklist.style.display = 'none';
     filters.style.display = 'none';
     result.style.display = 'block';
-
-    document.getElementById('plan-back-btn').addEventListener('click', () => {
-      result.style.display = 'none';
-      checklist.style.display = '';
-      filters.style.display = '';
-    });
+    showPlanBackBtn(result, checklist, filters);
 
     document.getElementById('plan-view-today').addEventListener('click', async () => {
       await loadToday();
@@ -553,7 +600,7 @@
       if (!res) return;
       const data = await res.json();
       const skipped = ids.length - (data.stops || 0);
-      showPlanResult(data, skipped);
+      showPlanResult(data, skipped, ids.length);
     } catch {
       toast('Optimization failed');
     }
@@ -569,7 +616,7 @@
     }
     const btn = document.getElementById('plan-briefs-btn');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>';
+    btn.innerHTML = '<span class="spinner"></span> Generating...';
     try {
       const res = await apiFetch('/api/brief/batch', {
         method: 'POST',
@@ -578,6 +625,37 @@
       if (!res) return;
       const data = await res.json();
       toast(`Generated ${data.generated} briefs`);
+
+      // Show briefs inline
+      const checklist = document.getElementById('plan-checklist');
+      const result = document.getElementById('plan-result');
+      const filters = document.querySelector('.plan-filters');
+      const briefs = (data.results || []).filter((r) => r.brief);
+
+      if (briefs.length) {
+        const nameMap = {};
+        allAccounts.forEach((a) => { nameMap[a.id] = a.name; });
+
+        result.innerHTML = `
+          <div class="plan-result-header">
+            <strong>AI Walk-in Briefs — ${briefs.length} accounts</strong>
+            <button class="plan-filter-btn" id="plan-back-btn">Back</button>
+          </div>
+          ${briefs.map((b) => `
+            <div class="plan-brief-item">
+              <div class="stop-name">${esc(nameMap[b.accountId] || b.accountId)}</div>
+              <div class="brief-box" style="display:block;">
+                <div class="brief-tag">AI Walk-in Brief</div>
+                ${esc(b.brief)}
+              </div>
+            </div>
+          `).join('')}
+        `;
+        checklist.style.display = 'none';
+        filters.style.display = 'none';
+        result.style.display = 'block';
+        showPlanBackBtn(result, checklist, filters);
+      }
     } catch {
       toast('Brief generation failed');
     }
