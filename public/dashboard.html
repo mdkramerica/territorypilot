@@ -124,6 +124,14 @@
     <h1 class="page-title">Plan Route</h1>
     <p class="page-sub">Select accounts and optimize your route.</p>
     <input type="date" class="plan-date-picker" id="plan-date" />
+    <div class="plan-filters">
+      <button class="plan-filter-btn" data-filter="all">All</button>
+      <button class="plan-filter-btn" data-filter="none">None</button>
+      <button class="plan-filter-btn" data-filter="overdue">Overdue</button>
+      <button class="plan-filter-btn" data-filter="high">High</button>
+      <button class="plan-filter-btn" data-filter="med">Med</button>
+      <button class="plan-filter-btn" data-filter="low">Low</button>
+    </div>
     <div class="card" id="plan-checklist" style="padding:0.5rem 1rem;"></div>
     <div class="plan-actions">
       <button class="btn btn-accent" id="plan-optimize-btn">Optimize</button>

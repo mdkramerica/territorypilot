@@ -436,7 +436,7 @@
           overdue = true;
         }
         return `
-        <label class="checklist-item ${overdue ? 'overdue' : ''}">
+        <label class="checklist-item ${overdue ? 'overdue' : ''}" data-priority="${a.priority}">
           <input type="checkbox" value="${esc(a.id)}" ${overdue ? 'checked' : ''} />
           <span>
             ${esc(a.name)} ${priorityBadge(a.priority)}
@@ -452,6 +452,28 @@
       ...document.querySelectorAll('#plan-checklist input[type="checkbox"]:checked'),
     ].map((cb) => cb.value);
   }
+
+  // ─── Plan Filter Buttons ─────────────────────────────────────────────
+  document.querySelector('.plan-filters').addEventListener('click', (e) => {
+    const btn = e.target.closest('.plan-filter-btn');
+    if (!btn) return;
+    const filter = btn.dataset.filter;
+    const items = document.querySelectorAll('#plan-checklist .checklist-item');
+    const priorityMap = { high: '1', med: '2', low: '3' };
+
+    items.forEach((item) => {
+      const cb = item.querySelector('input[type="checkbox"]');
+      if (filter === 'all') {
+        cb.checked = true;
+      } else if (filter === 'none') {
+        cb.checked = false;
+      } else if (filter === 'overdue') {
+        cb.checked = item.classList.contains('overdue');
+      } else if (priorityMap[filter]) {
+        cb.checked = item.dataset.priority === priorityMap[filter];
+      }
+    });
+  });
 
   document.getElementById('plan-optimize-btn').addEventListener('click', async () => {
     const ids = getSelectedAccountIds();

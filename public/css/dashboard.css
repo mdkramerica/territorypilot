@@ -202,6 +202,32 @@ body { line-height: 1.5; }
   color-scheme: dark;
 }
 .plan-date-picker:focus { border-color: var(--accent); }
+.plan-filters {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+.plan-filter-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.plan-filter-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.plan-filter-btn:active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
 .checklist-item {
   display: flex;
   align-items: center;
