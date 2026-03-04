@@ -70,19 +70,22 @@ router.post(
     // Only save to route_plans if we have actual routable stops
     const targetDate = plan_date || new Date().toLocaleDateString('en-CA');
     if (route.length > 0) {
+      // Delete existing plan for this date, then insert
       await supabase
         .from('route_plans')
-        .upsert(
-          {
-            user_id: req.user.id,
-            plan_date: targetDate,
-            account_order: route.map((a) => a.id),
-            total_miles: totalMiles,
-            created_at: new Date().toISOString(),
-          },
-          { onConflict: 'user_id,plan_date' }
-        )
-        .select();
+        .delete()
+        .eq('user_id', req.user.id)
+        .eq('plan_date', targetDate);
+
+      await supabase
+        .from('route_plans')
+        .insert({
+          user_id: req.user.id,
+          plan_date: targetDate,
+          account_order: route.map((a) => a.id),
+          total_miles: totalMiles,
+          created_at: new Date().toISOString(),
+        });
     }
 
     res.json({ route, totalMiles: totalMiles.toFixed(1), stops: route.length });
@@ -97,17 +100,21 @@ router.post(
   asyncHandler(async (req, res) => {
     const { plan_date, account_ids } = req.body;
 
+    // Delete existing plan for this date, then insert
+    await supabase
+      .from('route_plans')
+      .delete()
+      .eq('user_id', req.user.id)
+      .eq('plan_date', plan_date);
+
     const { error } = await supabase
       .from('route_plans')
-      .upsert(
-        {
-          user_id: req.user.id,
-          plan_date,
-          account_order: account_ids,
-          created_at: new Date().toISOString(),
-        },
-        { onConflict: 'user_id,plan_date' }
-      );
+      .insert({
+        user_id: req.user.id,
+        plan_date,
+        account_order: account_ids,
+        created_at: new Date().toISOString(),
+      });
 
     if (error) {
       console.error('Save plan error:', error);
