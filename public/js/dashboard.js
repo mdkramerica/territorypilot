@@ -237,7 +237,17 @@
 
     const markers = geoStops.map((s, i) => {
       const m = L.marker([s.lat, s.lng], { icon: numIcon(i + 1) }).addTo(map);
-      m.bindPopup(`<strong>${i + 1}. ${esc(s.name)}</strong>`);
+      const popup = `<strong>${i + 1}. ${esc(s.name)}</strong>${s.address ? '<br/><span style="font-size:0.8em;color:#999;">' + esc(s.address) + '</span>' : ''}`;
+      m.bindPopup(popup);
+      m.on('click', () => {
+        const target = document.querySelector(`.plan-stop[data-account-id="${s.id}"]`) ||
+                        document.querySelector(`.stop-card[data-id="${s.id}"]`);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          target.style.outline = '2px solid var(--accent)';
+          setTimeout(() => { target.style.outline = ''; }, 1500);
+        }
+      });
       return m;
     });
 
@@ -529,7 +539,7 @@
   // PLAN TAB
   // ══════════════════════════════════════════════════════════════════════════
   const planDate = document.getElementById('plan-date');
-  planDate.value = new Date().toISOString().split('T')[0];
+  planDate.value = new Date().toLocaleDateString('en-CA');
 
   async function loadPlanAccounts() {
     const container = document.getElementById('plan-checklist');
@@ -662,11 +672,15 @@
       </div>
       ${skippedCount > 0 ? `<div style="padding:0.4rem 0; font-size:0.78rem; color:var(--warning, #f59e0b);">${skippedCount} account${skippedCount === 1 ? '' : 's'} skipped (no geocoded address)</div>` : ''}
       ${route.map((s, i) => `
-        <div class="plan-stop">
+        <div class="plan-stop" data-account-id="${esc(s.id)}">
           <div class="stop-num">${i + 1}</div>
           <div class="plan-stop-info">
             <div class="stop-name">${esc(s.name)}</div>
-            <div class="stop-meta">${s.distFromPrev} mi from ${i === 0 ? 'start' : 'previous'}</div>
+            <div class="stop-meta">${s.distFromPrev} mi from ${i === 0 ? 'start' : 'previous'}${s.address ? ' · ' + esc(s.address) : ''}</div>
+            <div class="plan-stop-actions">
+              <button class="btn btn-outline btn-sm" data-action="plan-brief" data-id="${esc(s.id)}">Brief</button>
+            </div>
+            <div class="brief-box" id="plan-brief-${esc(s.id)}"></div>
           </div>
         </div>
       `).join('')}
@@ -677,6 +691,37 @@
     filters.style.display = 'none';
     result.style.display = 'block';
     showPlanBackBtn(result, checklist, filters);
+
+    // Delegate brief toggle clicks within plan result
+    if (!result._briefHandlerAttached) {
+      result.addEventListener('click', async (e) => {
+        const btn = e.target.closest('[data-action="plan-brief"]');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        const box = document.getElementById(`plan-brief-${id}`);
+        if (!box) return;
+        if (box.style.display === 'block') { box.style.display = 'none'; return; }
+        if (box.innerHTML.trim()) { box.style.display = 'block'; return; }
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>';
+        try {
+          const res = await apiFetch('/api/brief/generate', {
+            method: 'POST',
+            body: JSON.stringify({ accountId: id }),
+          });
+          if (!res) return;
+          const data = await res.json();
+          box.innerHTML = `<div class="brief-tag">AI Walk-in Brief</div>${esc(data.brief)}`;
+          box.style.display = 'block';
+          btn.classList.add('brief-loaded');
+        } catch {
+          toast('Could not generate brief');
+        }
+        btn.disabled = false;
+        btn.textContent = 'Brief';
+      });
+      result._briefHandlerAttached = true;
+    }
 
     // Render route map
     setTimeout(() => renderRouteMap('plan-map', route), 50);
@@ -733,12 +778,47 @@
   });
 
   document.getElementById('plan-briefs-btn').addEventListener('click', async () => {
-    const ids = getSelectedAccountIds();
-    if (!ids.length) {
-      toast('Select at least one account');
+    const result = document.getElementById('plan-result');
+    const btn = document.getElementById('plan-briefs-btn');
+
+    // If route result is showing, load briefs into existing stop cards
+    if (result.style.display === 'block' && result.querySelector('.plan-stop')) {
+      const planStops = result.querySelectorAll('.plan-stop[data-account-id]');
+      const ids = [...planStops].map((el) => el.dataset.accountId);
+      if (!ids.length) { toast('Optimize a route first'); return; }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Generating...';
+      try {
+        const res = await apiFetch('/api/brief/batch', {
+          method: 'POST',
+          body: JSON.stringify({ accountIds: ids }),
+        });
+        if (!res) return;
+        const data = await res.json();
+        const briefs = (data.results || []).filter((r) => r.brief);
+        briefs.forEach((b) => {
+          const box = document.getElementById(`plan-brief-${b.accountId}`);
+          if (box) {
+            box.innerHTML = `<div class="brief-tag">AI Walk-in Brief</div>${esc(b.brief)}`;
+            box.style.display = 'block';
+            const briefBtn = result.querySelector(`[data-action="plan-brief"][data-id="${b.accountId}"]`);
+            if (briefBtn) briefBtn.classList.add('brief-loaded');
+          }
+        });
+        toast(`Loaded ${briefs.length} briefs`);
+      } catch {
+        toast('Brief generation failed');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Briefs';
       return;
     }
-    const btn = document.getElementById('plan-briefs-btn');
+
+    // Fallback: no route displayed — use selected checkboxes
+    const ids = getSelectedAccountIds();
+    if (!ids.length) { toast('Select at least one account'); return; }
+
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Generating...';
     try {
@@ -750,16 +830,13 @@
       const data = await res.json();
       toast(`Generated ${data.generated} briefs`);
 
-      // Show briefs inline
       const checklist = document.getElementById('plan-checklist');
-      const result = document.getElementById('plan-result');
       const filters = document.querySelector('.plan-filters');
       const briefs = (data.results || []).filter((r) => r.brief);
 
       if (briefs.length) {
         const nameMap = {};
         allAccounts.forEach((a) => { nameMap[a.id] = a.name; });
-
         result.innerHTML = `
           <div class="plan-result-header">
             <strong>AI Walk-in Briefs — ${briefs.length} accounts</strong>

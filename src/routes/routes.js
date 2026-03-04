@@ -68,7 +68,7 @@ router.post(
     const { route, totalMiles } = nearestNeighborTSP(accounts, startLat, startLng);
 
     // Save to route_plans — use provided date or default to today
-    const targetDate = plan_date || new Date().toISOString().split('T')[0];
+    const targetDate = plan_date || new Date().toLocaleDateString('en-CA');
     await supabase
       .from('route_plans')
       .upsert(

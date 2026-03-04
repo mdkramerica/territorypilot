@@ -335,6 +335,30 @@ body { line-height: 1.5; }
 .plan-brief-item .stop-name { font-weight: 700; font-size: 0.88rem; margin-bottom: 0.3rem; }
 .plan-brief-item .brief-box { margin-top: 0; }
 
+/* ── Plan Stop Brief Integration ── */
+.plan-stop-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.4rem;
+}
+.plan-stop [data-action="plan-brief"].brief-loaded {
+  border-color: var(--accent);
+  color: var(--accent2);
+  position: relative;
+}
+.plan-stop [data-action="plan-brief"].brief-loaded::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  position: absolute;
+  top: -2px;
+  right: -2px;
+}
+.plan-stop .brief-box { margin-top: 0.4rem; }
+
 /* ── PROFILE TAB ── */
 .profile-card { text-align: center; padding: 1.5rem 1rem; }
 .profile-avatar {
