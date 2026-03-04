@@ -67,21 +67,23 @@ router.post(
 
     const { route, totalMiles } = nearestNeighborTSP(accounts, startLat, startLng);
 
-    // Save to route_plans — use provided date or default to today
+    // Only save to route_plans if we have actual routable stops
     const targetDate = plan_date || new Date().toLocaleDateString('en-CA');
-    await supabase
-      .from('route_plans')
-      .upsert(
-        {
-          user_id: req.user.id,
-          plan_date: targetDate,
-          account_order: route.map((a) => a.id),
-          total_miles: totalMiles,
-          created_at: new Date().toISOString(),
-        },
-        { onConflict: 'user_id,plan_date' }
-      )
-      .select();
+    if (route.length > 0) {
+      await supabase
+        .from('route_plans')
+        .upsert(
+          {
+            user_id: req.user.id,
+            plan_date: targetDate,
+            account_order: route.map((a) => a.id),
+            total_miles: totalMiles,
+            created_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id,plan_date' }
+        )
+        .select();
+    }
 
     res.json({ route, totalMiles: totalMiles.toFixed(1), stops: route.length });
   })

@@ -87,6 +87,10 @@
     try {
       const res = await apiFetch(`/api/route/${dateStr}`);
       if (!res) return;
+      if (!res.ok) {
+        console.error('Route API error:', res.status);
+        throw new Error('API error');
+      }
       const data = await res.json();
       todayStops = data.stops || [];
 
@@ -876,14 +880,19 @@
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>';
     try {
-      await apiFetch('/api/route/plan', {
+      const res = await apiFetch('/api/route/plan', {
         method: 'POST',
         body: JSON.stringify({
           plan_date: planDate.value,
           account_ids: ids,
         }),
       });
-      toast('Route plan saved');
+      if (!res || !res.ok) throw new Error('Save failed');
+      toast('Route plan saved — switching to route view');
+      selectedDate = planDate.value;
+      updateDateDisplay();
+      await loadRouteForDate(selectedDate);
+      switchTab('today');
     } catch {
       toast('Failed to save plan');
     }
