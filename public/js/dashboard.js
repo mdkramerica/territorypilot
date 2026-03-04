@@ -192,6 +192,28 @@
   document.getElementById('btn-cancel-add').addEventListener('click', showAccountsListView);
   document.getElementById('btn-cancel-import').addEventListener('click', showAccountsListView);
 
+  document.getElementById('btn-geocode').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-geocode');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Geocoding...';
+    try {
+      const res = await apiFetch('/api/accounts/geocode', { method: 'POST' });
+      if (!res) return;
+      const data = await res.json();
+      if (data.geocoded > 0) {
+        toast(`Geocoded ${data.geocoded} of ${data.total} accounts`);
+        accountsLoaded = null;
+        await loadAccounts();
+      } else {
+        toast(data.message || 'All accounts already geocoded');
+      }
+    } catch {
+      toast('Geocoding failed');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Geocode Addresses';
+  });
+
   async function loadAccounts() {
     if (accountsLoaded) return accountsLoaded;
     accountsLoaded = _loadAccounts();
