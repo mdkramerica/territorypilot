@@ -27,7 +27,9 @@
       tabContents.forEach((tc) => tc.classList.remove('active'));
       tab.classList.add('active');
       document.getElementById(`tab-${target}`).classList.add('active');
-      if (target === 'accounts') {
+      if (target === 'today') {
+        loadRouteForDate(selectedDate);
+      } else if (target === 'accounts') {
         showAccountsListView();
       }
     });
