@@ -97,7 +97,7 @@ router.post(
   asyncHandler(async (req, res) => {
     const { plan_date, account_ids } = req.body;
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('route_plans')
       .upsert(
         {
@@ -107,12 +107,13 @@ router.post(
           created_at: new Date().toISOString(),
         },
         { onConflict: 'user_id,plan_date' }
-      )
-      .select()
-      .single();
+      );
 
-    if (error) return res.status(500).json({ error: 'Failed to save plan' });
-    res.json(data);
+    if (error) {
+      console.error('Save plan error:', error);
+      return res.status(500).json({ error: 'Failed to save plan' });
+    }
+    res.json({ success: true, plan_date, accounts: account_ids.length });
   })
 );
 
