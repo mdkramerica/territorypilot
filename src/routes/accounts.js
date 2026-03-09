@@ -47,7 +47,7 @@ router.post(
   auth,
   validate(createAccountSchema),
   asyncHandler(async (req, res) => {
-    const { name, address, contact_name, contact_email, contact_phone, notes, priority, visit_frequency_days } = req.body;
+    const { name, address, contact_name, contact_email, contact_phone, notes, priority, visit_frequency_days, open_opportunity_value, contact_title } = req.body;
 
     const account = {
       user_id: req.user.id,
@@ -59,6 +59,8 @@ router.post(
       notes: notes || null,
       priority,
       visit_frequency_days,
+      open_opportunity_value: open_opportunity_value || 0,
+      contact_title: contact_title || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };

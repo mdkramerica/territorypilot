@@ -23,7 +23,10 @@ function nearestNeighborTSP(accounts, startLat, startLng) {
   while (unvisited.length > 0) {
     let nearest = unvisited.reduce((best, acct) => {
       const d = haversine(curLat, curLng, acct.lat, acct.lng);
-      return !best || d < best.dist ? { acct, dist: d } : best;
+      // Priority weighting: high (1) = 30% discount, low (3) = 30% penalty
+      const priorityMultiplier = acct.priority === 1 ? 0.7 : acct.priority === 3 ? 1.3 : 1.0;
+      const weightedDist = d * priorityMultiplier;
+      return !best || weightedDist < best.dist ? { acct, dist: d, weightedDist } : best;
     }, null);
 
     route.push({ ...nearest.acct, distFromPrev: nearest.dist.toFixed(1) });

@@ -56,6 +56,8 @@ const createAccountSchema = Joi.object({
   notes: Joi.string().allow('', null).max(2000),
   priority: Joi.number().integer().valid(1, 2, 3).default(2),
   visit_frequency_days: Joi.number().integer().min(1).max(365).default(30),
+  open_opportunity_value: Joi.number().min(0).default(0),
+  contact_title: Joi.string().allow('', null).max(255),
 });
 
 const updateAccountSchema = Joi.object({
@@ -67,6 +69,8 @@ const updateAccountSchema = Joi.object({
   notes: Joi.string().allow('', null).max(2000),
   priority: Joi.number().integer().valid(1, 2, 3),
   visit_frequency_days: Joi.number().integer().min(1).max(365),
+  open_opportunity_value: Joi.number().min(0),
+  contact_title: Joi.string().allow('', null).max(255),
 }).min(1);
 
 // ─── Route Schemas ───────────────────────────────────────────────────────────

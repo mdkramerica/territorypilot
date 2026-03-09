@@ -68,6 +68,23 @@ CREATE TABLE IF NOT EXISTS public.route_plans (
   UNIQUE(user_id, plan_date)
 );
 
+-- Daily briefs (morning brief cron)
+CREATE TABLE IF NOT EXISTS public.daily_briefs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  brief_date DATE NOT NULL,
+  route_order JSONB,
+  total_miles FLOAT,
+  brief_html TEXT,
+  sent_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, brief_date)
+);
+
+-- Add richer account fields (TerritoryPulse merge)
+ALTER TABLE public.accounts ADD COLUMN IF NOT EXISTS open_opportunity_value NUMERIC DEFAULT 0;
+ALTER TABLE public.accounts ADD COLUMN IF NOT EXISTS contact_title TEXT;
+
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- ROW LEVEL SECURITY
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -77,12 +94,14 @@ ALTER TABLE public.accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.call_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.briefs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.route_plans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.daily_briefs ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can access own data" ON public.users FOR ALL USING (auth.uid() = id);
 CREATE POLICY "Users can access own accounts" ON public.accounts FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users can access own logs" ON public.call_logs FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users can access own briefs" ON public.briefs FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users can access own routes" ON public.route_plans FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can access own daily briefs" ON public.daily_briefs FOR ALL USING (auth.uid() = user_id);
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- INDEXES
@@ -93,6 +112,7 @@ CREATE INDEX IF NOT EXISTS call_logs_account_id_idx ON public.call_logs(account_
 CREATE INDEX IF NOT EXISTS call_logs_user_date_idx ON public.call_logs(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS briefs_cache_idx ON public.briefs(account_id, user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS route_plans_user_date_idx ON public.route_plans(user_id, plan_date);
+CREATE INDEX IF NOT EXISTS daily_briefs_user_date_idx ON public.daily_briefs(user_id, brief_date);
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- TRIGGERS

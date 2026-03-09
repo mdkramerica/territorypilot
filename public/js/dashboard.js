@@ -450,6 +450,8 @@
         address: document.getElementById('add-address').value.trim(),
         contact_name: document.getElementById('add-contact').value.trim(),
         contact_email: document.getElementById('add-email').value.trim(),
+        contact_title: document.getElementById('add-contact-title').value.trim(),
+        open_opportunity_value: parseFloat(document.getElementById('add-opp-value').value) || 0,
         priority: parseInt(document.getElementById('add-priority').value, 10),
         notes: document.getElementById('add-notes').value.trim(),
       };
